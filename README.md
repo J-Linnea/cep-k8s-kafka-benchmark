@@ -1,8 +1,8 @@
 # ScalableMine Task
 
 ## Exercise 1
-Checkout the repo <https://github.com/HenryWedge/KubernetesEnvironmentBuilder>.
-Follow the instructions in the `README` of that repository. With that you set up a Kubernetes
+Initialize the git submodule `KubernetesEnvironmentBuilder`.
+Follow the instructions in the `README` inside that submodule. With that you set up a Kubernetes
 environment which is running inside minikube. A kafka cluster, a load generator and a monitoring 
 stack including Prometheus and Grafana will be deployed. 
 
