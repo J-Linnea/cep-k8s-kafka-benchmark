@@ -17,7 +17,7 @@ As a result an instance of the `CountedDirectlyFollowsRelations` class should be
 `model` Kafka topic.
 
 In the second step filter the least frequent Directly-Follows-Relations from the result. Decide on a reasonable threshold!
-You can either implement the Stream Heuristics Miner or come up with an own idea.
+You can either implement the [Stream Heuristics Miner (page 12)](https://arxiv.org/pdf/1212.6383) or come up with an own idea.
 
 ## Exercise 3
 Now it is time for testing your stream processing pipeline. 
