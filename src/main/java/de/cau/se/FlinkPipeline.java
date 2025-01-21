@@ -51,7 +51,8 @@ public class FlinkPipeline {
                 .keyBy(Event::getCaseId)
                 .flatMap(new DirectlyFollowsBuilder())
                 .flatMap(new DirectlyFollowsRelationCounter())
-                .map(new MockModelBuilder(100))
+                // TODO#3 Uncomment line below for testing
+                //.map(new MockModelBuilder(100))
                 .sinkTo(sink);
         env.execute();
     }
