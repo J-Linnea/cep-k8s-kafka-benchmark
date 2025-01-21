@@ -10,11 +10,14 @@ import org.apache.flink.formats.json.JsonSerializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
+import java.util.List;
 import java.util.Properties;
 
 public class FlinkPipeline {
+
     public static void main(String[] args) throws Exception {
-        new FlinkPipeline().start("minikube:32714", "group", "testi", "out");
+        // TODO#1 Insert your bootstrap server url
+        new FlinkPipeline().start("minikube:31343", "group", "input", "model");
     }
 
     public void start(final String bootstrapServer, final String group, final String inTopic, final String outTopic) throws Exception {
@@ -32,16 +35,24 @@ public class FlinkPipeline {
                 .setValueOnlyDeserializer(new JsonDeserializationSchema<>(Event.class))
                 .build();
 
-        KafkaSink<Event> sink = KafkaSink.<Event>builder()
+        KafkaSink<List<CountedDirectlyFollowsRelations>> sink = KafkaSink.<List<CountedDirectlyFollowsRelations>>builder()
                 .setBootstrapServers(bootstrapServer)
-                .setRecordSerializer(KafkaRecordSerializationSchema.<Event>builder()
+                .setRecordSerializer(KafkaRecordSerializationSchema.<List<CountedDirectlyFollowsRelations>>builder()
                         .setTopic(outTopic)
                         .setValueSerializationSchema(new JsonSerializationSchema<>())
                         .build()
                 ).build();
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.fromSource(source, WatermarkStrategy.noWatermarks(), "input").sinkTo(sink);
+
+        // TODO#2 Extend the pipeline
+        env
+                .fromSource(source, WatermarkStrategy.noWatermarks(), "input")
+                .keyBy(Event::getCaseId)
+                .flatMap(new DirectlyFollowsBuilder())
+                .flatMap(new DirectlyFollowsRelationCounter())
+                .map(new MockModelBuilder(100))
+                .sinkTo(sink);
         env.execute();
     }
 }

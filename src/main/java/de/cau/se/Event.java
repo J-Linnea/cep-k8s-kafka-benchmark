@@ -45,7 +45,7 @@ public class Event {
         this.group = group;
     }
 
-    public String getCaseid() {
+    public String getCaseId() {
         return caseid;
     }
 
