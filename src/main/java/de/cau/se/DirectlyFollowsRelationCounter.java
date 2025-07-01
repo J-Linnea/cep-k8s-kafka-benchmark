@@ -12,6 +12,7 @@ public class DirectlyFollowsRelationCounter extends RichFlatMapFunction<Directly
 
     @Override
     public void flatMap(DirectlyFollowsRelation directlyFollowsRelation, Collector<List<CountedDirectlyFollowsRelations>> counter) {
+        System.out.println(directlyFollowsRelation);
         // TODO#2 Implement
     }
 }

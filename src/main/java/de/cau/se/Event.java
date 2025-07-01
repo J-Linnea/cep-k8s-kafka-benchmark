@@ -8,6 +8,9 @@ public class Event {
     private String node;
     private String group;
 
+    // NEU: interne Zeit, wann Flink das Event verarbeitet
+    private long processingStartTime;
+
     public Event() {
     }
 
@@ -45,6 +48,8 @@ public class Event {
         this.group = group;
     }
 
+    public void setProcessingStartTime(long processingStartTime) { this.processingStartTime = processingStartTime; }
+
     public String getCaseId() {
         return caseid;
     }
@@ -65,12 +70,15 @@ public class Event {
         return group;
     }
 
+    public long getProcessingStartTime() { return processingStartTime; }
+
     @Override
     public String toString() {
         return "Event{" +
                 "caseid='" + caseid + '\'' +
                 ", activity='" + activity + '\'' +
                 ", timestamp='" + timestamp + '\'' +
+                ", processingStartTime='" + processingStartTime + '\'' +
                 ", node='" + node + '\'' +
                 ", group='" + group + '\'' +
                 '}';
