@@ -82,7 +82,8 @@ public class FlinkPipeline {
                                     LocalDateTime localDateTime = LocalDateTime.parse(event.getTimestamp(), formatter);
                                     return System.currentTimeMillis(); //localDateTime.atZone(ZoneId.of("UTC")).toInstant().toEpochMilli();
                                 })
-                ).keyBy(Event::getCaseId);
+                ).map(new ThroughputCounter())//.setParallelism(1)
+                .keyBy(Event::getCaseId);
 
 //        sourceStream.keyBy(Event::getCaseId).window(SlidingEventTimeWindows.of(Time.seconds(1), Time.seconds(1))).process(
 //                new ProcessWindowFunction<Event, Object, String, TimeWindow>() {
@@ -122,8 +123,8 @@ public class FlinkPipeline {
 
         OutputTag<String> timeoutTag = new OutputTag<>("timeout-events"){};
 
-        DataStream<String> result1 = CEP.pattern(sourceStream, PatternUtils.queryInit("Store"))
-                .select(PatternUtils.latencyReportingSelect("Init(A)", "middle"));
+//        DataStream<String> result1 = CEP.pattern(sourceStream, PatternUtils.queryInit("Store"))
+//                .select(PatternUtils.latencyReportingSelect("Init(A)", "middle"));
 
         SingleOutputStreamOperator<String> result2 = CEP.pattern(sourceStream, PatternUtils.queryExistence("Store"))
                 .select(
@@ -131,146 +132,146 @@ public class FlinkPipeline {
                         PatternUtils.timeoutReporter("Existence(A)", "start"),      // Timeout-Verarbeitung
                         PatternUtils.latencyReportingSelect("Existence(A)", "match")  // Normale Matches
                 );
-
-        SingleOutputStreamOperator<String> result3 = CEP.pattern(sourceStream, PatternUtils.queryExistence2("MaterialPreparation - Finished"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Existence2(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Existence2(A)", "match")
-                );
-
-        SingleOutputStreamOperator<String> result4 = CEP.pattern(sourceStream, PatternUtils.queryExistence3("Package waits for sending"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Existence3(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Existence3(A)", "match")
-                );
-
-        SingleOutputStreamOperator<String> result5 = CEP.pattern(sourceStream, PatternUtils.queryAbsence("Reject"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Absence(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Absence(A)", "start")
-                );
-
-        SingleOutputStreamOperator<String> result6 = CEP.pattern(sourceStream, PatternUtils.queryAbsence2("Item Needs Corrections"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Absence2(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Absence2(A)", "notA")
-                );
-
-        SingleOutputStreamOperator<String> result7 = CEP.pattern(sourceStream, PatternUtils.queryAbsence3("Waiting for Material"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Absence3(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Absence3(A)", "notA")
-                );
-
-        SingleOutputStreamOperator<String> result8 = CEP.pattern(sourceStream, PatternUtils.queryExactly1("Packaging completed"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Exactly1(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Exactly1(A)", "notA")
-                );
-
-        SingleOutputStreamOperator<String> result9 = CEP.pattern(sourceStream, PatternUtils.queryExactly2("Internal Error"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Exactly2(A)", "start"),
-                        PatternUtils.latencyReportingSelect("Exactly2(A)", "notA")
-                );
-
-        DataStream<String> result10 = CEP.pattern(sourceStream, PatternUtils.queryChoice("Reject", "Pass To Production"))
-                .select(PatternUtils.latencyReportingSelect("Choice(A,B)", "match"));
-
-        SingleOutputStreamOperator<String> result11 = CEP.pattern(sourceStream, PatternUtils.queryExclusiveChoiceA("Overheating", "Item broke"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("ExclusiveChoice(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("ExclusiveChoice(A,B)", "notB")
-                );
-
-        SingleOutputStreamOperator<String> result12 = CEP.pattern(sourceStream, PatternUtils.queryExclusiveChoiceB("Overheating", "Item broke"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("ExclusiveChoice(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("ExclusiveChoice2(A,B)", "notA")
-                );
-
-        SingleOutputStreamOperator<String> result13 = CEP.pattern(sourceStream, PatternUtils.queryRespondedExistence("Pass to production", "Assembly Line Setup successfully"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("RespondedExistence(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("RespondedExistence(A,B)", "match"));
-
-        DataStream<String> result14 = CEP.pattern(sourceStream, PatternUtils.queryCoExistence("Quality check passed", "Packaging completed"))
-                .select(PatternUtils.latencyReportingSelect("Co-Existence(A,B)", "match"));
-
-        SingleOutputStreamOperator<String> result15 = CEP.pattern(sourceStream, PatternUtils.queryResponse("Quality check passed", "Packaging completed"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Response(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("Response(A,B)", "match")
-                );
-
-        DataStream<String> result16 = CEP.pattern(sourceStream, PatternUtils.queryPrecedence("Quality check passed", "Packaging completed"))
-                .select(PatternUtils.latencyReportingSelect("Precedence(A,B)", "match"));
-
-        SingleOutputStreamOperator<String> result17 = CEP.pattern(sourceStream, PatternUtils.querySuccession("Pass To Production", "MaterialPreparation - Finished"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("Succession(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("Succession(A,B)", "match")
-                );
-
-        SingleOutputStreamOperator<String> result18 = CEP.pattern(sourceStream, PatternUtils.queryAlternateResponse("Store", "Package sent"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("AlternateResponse(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("AlternateResponse(A,B)", "match")
-                );
-
-        SingleOutputStreamOperator<String> result19 = CEP.pattern(sourceStream, PatternUtils.queryAlternatePrecedence("Material Not Set Up as expected", "MaterialPreparation - Finished"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("AlternatePrecedence(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("AlternatePrecedence(A,B)", "match")
-                );
-
-        SingleOutputStreamOperator<String> result20 = CEP.pattern(sourceStream, PatternUtils.queryAlternateSuccession("Assembling completed", "Item Needs Corrections"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("AlternateSuccession(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("AlternateSuccession(A,B)", "match")
-                );
-
-        DataStream<String> result21 = CEP.pattern(sourceStream, PatternUtils.queryChainResponse("Waiting for Material", "MaterialPreparation - Finished"))
-                .select(PatternUtils.latencyReportingSelect("ChainResponse(A,B)", "match"));
-
-        DataStream<String> result22 = CEP.pattern(sourceStream, PatternUtils.queryChainPrecedence("Material Not Set Up as expected", "Internal error"))
-                .select(PatternUtils.latencyReportingSelect("ChainPrecedence(A,B)", "match"));
-
-        DataStream<String> result23 = CEP.pattern(sourceStream, PatternUtils.queryChainSuccession("Assembling completed", "Item Needs Corrections"))
-                .select(PatternUtils.latencyReportingSelect("ChainSuccession(A,B)", "match"));
-
-        SingleOutputStreamOperator<String> result24 = CEP.pattern(sourceStream, PatternUtils.queryNotCoExistence("Quality check passed", "Quality insufficient"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("NotCoExistence(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("NotCoExistence(A,B)", "notB")
-                );
-
-        SingleOutputStreamOperator<String> result25 = CEP.pattern(sourceStream, PatternUtils.queryNotSuccession("Quality check passed", "Item Needs Corrections"))
-                .select(
-                        timeoutTag,
-                        PatternUtils.timeoutReporter("NotSuccession(A,B)", "start"),
-                        PatternUtils.latencyReportingSelect("NotSuccession(A,B)", "notB")
-                );
-
-        DataStream<String> result26 = CEP.pattern(sourceStream, PatternUtils.queryNotChainSuccession("Quality check passed", "Packaging completed"))
-                .select(PatternUtils.latencyReportingSelect("NotChainSuccession(A,B)", "match"));
-
+//
+//        SingleOutputStreamOperator<String> result3 = CEP.pattern(sourceStream, PatternUtils.queryExistence2("MaterialPreparation - Finished"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Existence2(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Existence2(A)", "match")
+//                );
+//
+//        SingleOutputStreamOperator<String> result4 = CEP.pattern(sourceStream, PatternUtils.queryExistence3("Package waits for sending"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Existence3(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Existence3(A)", "match")
+//                );
+//
+//        SingleOutputStreamOperator<String> result5 = CEP.pattern(sourceStream, PatternUtils.queryAbsence("Reject"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Absence(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Absence(A)", "start")
+//                );
+//
+//        SingleOutputStreamOperator<String> result6 = CEP.pattern(sourceStream, PatternUtils.queryAbsence2("Item Needs Corrections"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Absence2(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Absence2(A)", "notA")
+//                );
+//
+//        SingleOutputStreamOperator<String> result7 = CEP.pattern(sourceStream, PatternUtils.queryAbsence3("Waiting for Material"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Absence3(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Absence3(A)", "notA")
+//                );
+//
+//        SingleOutputStreamOperator<String> result8 = CEP.pattern(sourceStream, PatternUtils.queryExactly1("Packaging completed"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Exactly1(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Exactly1(A)", "notA")
+//                );
+//
+//        SingleOutputStreamOperator<String> result9 = CEP.pattern(sourceStream, PatternUtils.queryExactly2("Internal Error"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Exactly2(A)", "start"),
+//                        PatternUtils.latencyReportingSelect("Exactly2(A)", "notA")
+//                );
+//
+//        DataStream<String> result10 = CEP.pattern(sourceStream, PatternUtils.queryChoice("Reject", "Pass To Production"))
+//                .select(PatternUtils.latencyReportingSelect("Choice(A,B)", "match"));
+//
+//        SingleOutputStreamOperator<String> result11 = CEP.pattern(sourceStream, PatternUtils.queryExclusiveChoiceA("Overheating", "Item broke"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("ExclusiveChoice(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("ExclusiveChoice(A,B)", "notB")
+//                );
+//
+//        SingleOutputStreamOperator<String> result12 = CEP.pattern(sourceStream, PatternUtils.queryExclusiveChoiceB("Overheating", "Item broke"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("ExclusiveChoice(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("ExclusiveChoice2(A,B)", "notA")
+//                );
+//
+//        SingleOutputStreamOperator<String> result13 = CEP.pattern(sourceStream, PatternUtils.queryRespondedExistence("Pass to production", "Assembly Line Setup successfully"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("RespondedExistence(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("RespondedExistence(A,B)", "match"));
+//
+//        DataStream<String> result14 = CEP.pattern(sourceStream, PatternUtils.queryCoExistence("Quality check passed", "Packaging completed"))
+//                .select(PatternUtils.latencyReportingSelect("Co-Existence(A,B)", "match"));
+//
+//        SingleOutputStreamOperator<String> result15 = CEP.pattern(sourceStream, PatternUtils.queryResponse("Quality check passed", "Packaging completed"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Response(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("Response(A,B)", "match")
+//                );
+//
+//        DataStream<String> result16 = CEP.pattern(sourceStream, PatternUtils.queryPrecedence("Quality check passed", "Packaging completed"))
+//                .select(PatternUtils.latencyReportingSelect("Precedence(A,B)", "match"));
+//
+//        SingleOutputStreamOperator<String> result17 = CEP.pattern(sourceStream, PatternUtils.querySuccession("Pass To Production", "MaterialPreparation - Finished"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("Succession(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("Succession(A,B)", "match")
+//                );
+//
+//        SingleOutputStreamOperator<String> result18 = CEP.pattern(sourceStream, PatternUtils.queryAlternateResponse("Store", "Package sent"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("AlternateResponse(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("AlternateResponse(A,B)", "match")
+//                );
+//
+//        SingleOutputStreamOperator<String> result19 = CEP.pattern(sourceStream, PatternUtils.queryAlternatePrecedence("Material Not Set Up as expected", "MaterialPreparation - Finished"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("AlternatePrecedence(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("AlternatePrecedence(A,B)", "match")
+//                );
+//
+//        SingleOutputStreamOperator<String> result20 = CEP.pattern(sourceStream, PatternUtils.queryAlternateSuccession("Assembling completed", "Item Needs Corrections"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("AlternateSuccession(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("AlternateSuccession(A,B)", "match")
+//                );
+//
+//        DataStream<String> result21 = CEP.pattern(sourceStream, PatternUtils.queryChainResponse("Waiting for Material", "MaterialPreparation - Finished"))
+//                .select(PatternUtils.latencyReportingSelect("ChainResponse(A,B)", "match"));
+//
+//        DataStream<String> result22 = CEP.pattern(sourceStream, PatternUtils.queryChainPrecedence("Material Not Set Up as expected", "Internal error"))
+//                .select(PatternUtils.latencyReportingSelect("ChainPrecedence(A,B)", "match"));
+//
+//        DataStream<String> result23 = CEP.pattern(sourceStream, PatternUtils.queryChainSuccession("Assembling completed", "Item Needs Corrections"))
+//                .select(PatternUtils.latencyReportingSelect("ChainSuccession(A,B)", "match"));
+//
+//        SingleOutputStreamOperator<String> result24 = CEP.pattern(sourceStream, PatternUtils.queryNotCoExistence("Quality check passed", "Quality insufficient"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("NotCoExistence(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("NotCoExistence(A,B)", "notB")
+//                );
+//
+//        SingleOutputStreamOperator<String> result25 = CEP.pattern(sourceStream, PatternUtils.queryNotSuccession("Quality check passed", "Item Needs Corrections"))
+//                .select(
+//                        timeoutTag,
+//                        PatternUtils.timeoutReporter("NotSuccession(A,B)", "start"),
+//                        PatternUtils.latencyReportingSelect("NotSuccession(A,B)", "notB")
+//                );
+//
+//        DataStream<String> result26 = CEP.pattern(sourceStream, PatternUtils.queryNotChainSuccession("Quality check passed", "Packaging completed"))
+//                .select(PatternUtils.latencyReportingSelect("NotChainSuccession(A,B)", "match"));
+//
 
 //         result1.print();
 //         DataStream<String> timeoutResult2 = result2.getSideOutput(timeoutTag);
