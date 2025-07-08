@@ -132,7 +132,7 @@ public class FlinkPipeline {
                         PatternUtils.timeoutReporter("Existence(A)", "start"),      // Timeout-Verarbeitung
                         PatternUtils.latencyReportingSelect("Existence(A)", "match")  // Normale Matches
                 );
-//
+
 //        SingleOutputStreamOperator<String> result3 = CEP.pattern(sourceStream, PatternUtils.queryExistence2("MaterialPreparation - Finished"))
 //                .select(
 //                        timeoutTag,
@@ -274,9 +274,9 @@ public class FlinkPipeline {
 //
 
 //         result1.print();
-//         DataStream<String> timeoutResult2 = result2.getSideOutput(timeoutTag);
-//         timeoutResult2.print();
-//         result2.print();
+         DataStream<String> timeoutResult2 = result2.getSideOutput(timeoutTag);
+         timeoutResult2.print();
+         result2.print();
 //        DataStream<String> timeoutResult3 = result3.getSideOutput(timeoutTag);
 //        timeoutResult3.print();
 //         result3.print();
